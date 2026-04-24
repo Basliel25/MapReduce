@@ -2,6 +2,7 @@
 #define MAPREDUCE
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 #include "Interface.h"
 
 /***********************
@@ -31,7 +32,7 @@ typedef struct entry_t {
 typedef struct {
     entry_t **buckets; /**<- Pointer to buckets*/
     int num_buckets; /**<- Total buckets in hashtable*/
-    pthread_mutex_t bucket_lock; /**<- Lock to protect partitions*/
+    pthread_mutex_t partition_lock; /**<- Lock to protect partitions*/
 } hashtable_t;
 
 /**
