@@ -1,0 +1,67 @@
+#ifndef MAPREDUCE
+#define MAPREDUCE
+#include <pthread.h>
+#include "Interface.h"
+
+/***********************
+ *** Data Structures ***
+***********************/
+/**
+ * @brief A node inside a bucket of the hashtable
+ */
+typedef struct kv_node_t {
+    char *value; /**<- The value to be stored in the node*/
+    struct kv_node_t *next; /**<- Pointer to next Node*/
+} kv_node_t;
+
+/**
+ * @brief A bucket of tables grouped by hash
+ */
+typedef struct entry_t {
+    char *keys;
+    kv_node_t *values; /**<- Linked List of value nodes.*/
+    kv_node_t *cursor; /**<- Pointer to current cursor for getter*/
+    struct entry_t *next; /**<- Pointer to next list in bucket*/
+} entry_t;
+
+/**
+ * @brief The hastable containing all buckets
+ */
+typedef struct {
+    entry_t **buckets; /**<- Pointer to buckets*/
+    int num_buckets; /**<- Total buckets in hashtable*/
+    pthread_mutex_t bucket_lock; /**<- Lock to protect partitions*/
+} hashtable_t;
+
+/**
+ * @brief Emitting Function
+ * @param char *key: The key to be added to a bucket
+ * @param char *value: The value to be associated to the key
+ */
+void MR_Emit(char *key, char *value);
+
+/**
+ * @brief Hashing Function
+ * @param char *key: The key to be hashed
+ * @param int num_partitions: The number of partions
+ *                            in the hashtable
+ */
+unsigned long MR_DefaultHashPartition(char *key, int num_partitions);
+
+/**
+ * @brief Map and Reduce Execution
+ * @param int argc: Number of arguments passed
+ * @param char *argv[]: Arguments
+ * @param Mapper map: The mapper function implemented by user
+ * @param int num_mappers: Number of mapping threads
+ * @param Reducer reduce: The reducer function implemented by user
+ * @param int num_reducers: Number of reducing threads
+ * @param Partitioner partition: A different hasing function if NULL uses MR_DefaultHashPartition
+ */
+void MR_Run(int argc, char *argv[], 
+	    Mapper map, int num_mappers, 
+	    Reducer reduce, int num_reducers, 
+	    Partitioner partition);
+
+char *MR_Getter(char *key, int partition_number);
+#endif // MAPREDUCE
