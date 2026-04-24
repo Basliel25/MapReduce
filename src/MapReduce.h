@@ -1,6 +1,7 @@
 #ifndef MAPREDUCE
 #define MAPREDUCE
 #include <pthread.h>
+#include <stdlib.h>
 #include "Interface.h"
 
 /***********************
@@ -15,10 +16,10 @@ typedef struct kv_node_t {
 } kv_node_t;
 
 /**
- * @brief A bucket of tables grouped by hash
+ * @brief A bucket of linked lists grouped by hash
  */
 typedef struct entry_t {
-    char *keys;
+    char *key;
     kv_node_t *values; /**<- Linked List of value nodes.*/
     kv_node_t *cursor; /**<- Pointer to current cursor for getter*/
     struct entry_t *next; /**<- Pointer to next list in bucket*/
@@ -33,6 +34,13 @@ typedef struct {
     pthread_mutex_t bucket_lock; /**<- Lock to protect partitions*/
 } hashtable_t;
 
+/**
+ * @brief Inserting key-value pair to the appropriate bucket
+ * @param int partition: The appropriate hashed bucket number
+ * @param char *key: The key to be added to a bucket
+ * @param char *value: The value to be associated to the key
+ */
+void MR_Insert(int partition, char *key, char *value);
 /**
  * @brief Emitting Function
  * @param char *key: The key to be added to a bucket
@@ -63,5 +71,10 @@ void MR_Run(int argc, char *argv[],
 	    Reducer reduce, int num_reducers, 
 	    Partitioner partition);
 
+/**
+ * @brief Getter Function, walks buckets to look for values
+ * @param char *key: The key to be hashed
+ * @param int partition_number: The partiton the value is located in 
+ */
 char *MR_Getter(char *key, int partition_number);
 #endif // MAPREDUCE

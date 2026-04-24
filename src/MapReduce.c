@@ -1,22 +1,15 @@
 #include "MapReduce.h"
 
-static hashtable_t *partitons;
+static hashtable_t *partitions;
 static int num_partitions;
 static Partitioner partitioner;
 
 void MR_Emit(char *key, char *value) {
 
-    // ON CALL this function stores the key value pair to appropriate
-    // partiton
-    // Initalizes the partion array
-    // Selects a partition for each key using the hashing value
-    // unsigned long partition = MR_DefaultHashPartition(key, num_partions)
-    // Acquire Lock
-    // int idx = partiton of value % num_buckets
-    // walks bucket[idx] to find the specific key
-    // if found appends value to the bucket
-    // if not create a new node in bucket[idx]
-    // Release Lock
+    int partiton_num = partitioner(key, num_partitions);
+    partitions[partition_num]->bucket_lock;
+    if(partitions[partition_num] != NULL) {}
+
 }
 
 unsigned long MR_DefaultHashPartition(char *key, int num_partitions) {
@@ -32,8 +25,15 @@ void MR_Run(int argc, char *argv[],
         Reducer reduce, int num_reducers, 
         Partitioner partition) {
     // Initalize global variables
-    // hashtable_t hash_partitions[num_partitions] number of partitons is number of reducers 
-    // emit called with value key pair
-}
+    num_partitions = num_reducers;
+    if (partition != NULL) {partitioner = partition;}
+    else {partitioner = MR_DefaultHashPartition;}
 
+    partitions = malloc(sizeof(hashtable_t)*num_partitions);
+    for(int i = 0; i < num_partitions; i++) {
+        partitions[i].num_buckets = 101;
+        partitions[i].buckets = calloc(101, sizeof(entry_t));
+        pthread_mutex_init(&partitions[i].bucket_lock, NULL);
+    }
+}
 char *MR_Getter(char *key, int partition_number) {return NULL;}
