@@ -80,6 +80,14 @@ void *MR_ReducerWorker(void *arg);
  * @return Negative if a<b, zero if equal, positive if a>b
  */
 int MR_EntryKeyCmp(const void *a, const void *b);
+
+/**
+ * @brief Frees all memory owned by the partitions array: every
+ *        kv_node_t (and its strdup'd value), every entry_t (and its
+ *        strdup'd key), each partition's bucket array, destroys the
+ *        partition mutex, then frees the partitions array itself.
+ */
+void MR_Teardown(void);
 /**
  * @brief Emitting Function
  * @param char *key: The key to be added to a bucket

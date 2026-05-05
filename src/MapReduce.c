@@ -29,6 +29,33 @@ int MR_EntryKeyCmp(const void *a, const void *b) {
     return strcmp(ea->key, eb->key);
 }
 
+void MR_Teardown(void) {
+    for (int p = 0; p < num_partitions; p++) {
+        hashtable_t *partition = &partitions[p];
+        for (int b = 0; b < partition->num_buckets; b++) {
+            entry_t *entry = partition->buckets[b];
+            while (entry != NULL) {
+                kv_node_t *node = entry->values;
+                while (node != NULL) {
+                    kv_node_t *next_node = node->next;
+                    free(node->value);
+                    free(node);
+                    node = next_node;
+                }
+                entry_t *next_entry = entry->next;
+                free(entry->key);
+                free(entry);
+                entry = next_entry;
+            }
+        }
+        free(partition->buckets);
+        pthread_mutex_destroy(&partition->partition_lock);
+    }
+    free(partitions);
+    partitions = NULL;
+    num_partitions = 0;
+}
+
 void *MR_ReducerWorker(void *arg) {
     int partition_number = *(int *)arg;
     hashtable_t *partition = &partitions[partition_number];
@@ -161,6 +188,8 @@ void MR_Run(int argc, char *argv[],
     }
     free(reducer_threads);
     free(reducer_ids);
+
+    MR_Teardown();
 }
 char *MR_Getter(char *key, int partition_number) {
     hashtable_t *partition = &partitions[partition_number];
