@@ -6,6 +6,7 @@ static Partitioner partitioner;
 
 static file_queue_t file_queue;
 static Mapper user_mapper;
+static Reducer user_reducer;
 
 void *MR_MapperWorker(void *arg) {
     (void)arg;
@@ -20,6 +21,21 @@ void *MR_MapperWorker(void *arg) {
 
         user_mapper(file);
     }
+}
+
+void *MR_ReducerWorker(void *arg) {
+    int partition_number = *(int *)arg;
+    hashtable_t *partition = &partitions[partition_number];
+
+    for (int b = 0; b < partition->num_buckets; b++) {
+        entry_t *entry = partition->buckets[b];
+        while (entry != NULL) {
+            entry->cursor = entry->values;
+            user_reducer(entry->key, MR_Getter, partition_number);
+            entry = entry->next;
+        }
+    }
+    return NULL;
 }
 
 void MR_Emit(char *key, char *value) {
@@ -107,6 +123,20 @@ void MR_Run(int argc, char *argv[],
     }
     free(mapper_threads);
     pthread_mutex_destroy(&file_queue.lock);
+
+    // Spawn reducer threads, one per partition
+    user_reducer = reduce;
+    pthread_t *reducer_threads = malloc(sizeof(pthread_t) * num_reducers);
+    int *reducer_ids = malloc(sizeof(int) * num_reducers);
+    for (int i = 0; i < num_reducers; i++) {
+        reducer_ids[i] = i;
+        pthread_create(&reducer_threads[i], NULL, MR_ReducerWorker, &reducer_ids[i]);
+    }
+    for (int i = 0; i < num_reducers; i++) {
+        pthread_join(reducer_threads[i], NULL);
+    }
+    free(reducer_threads);
+    free(reducer_ids);
 }
 char *MR_Getter(char *key, int partition_number) {
     hashtable_t *partition = &partitions[partition_number];
