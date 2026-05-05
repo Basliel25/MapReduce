@@ -18,7 +18,6 @@ void *MR_MapperWorker(void *arg) {
         }
         char *file = file_queue.files[file_queue.next++];
         pthread_mutex_unlock(&file_queue.lock);
-
         user_mapper(file);
     }
 }
