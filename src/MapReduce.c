@@ -108,4 +108,23 @@ void MR_Run(int argc, char *argv[],
     free(mapper_threads);
     pthread_mutex_destroy(&file_queue.lock);
 }
-char *MR_Getter(char *key, int partition_number) {return NULL;}
+char *MR_Getter(char *key, int partition_number) {
+    hashtable_t *partition = &partitions[partition_number];
+    int bucket_num = partitioner(key, partition->num_buckets);
+
+    // Locate the entry for this key within the bucket chain
+    entry_t *entry = partition->buckets[bucket_num];
+    while (entry != NULL) {
+        int cmp = strcmp(entry->key, key);
+        if (cmp == 0) break;
+        if (cmp > 0) return NULL; // bucket chain is sorted; key absent
+        entry = entry->next;
+    }
+    if (entry == NULL) return NULL;
+
+    // Advance the per-entry cursor and return the current value
+    if (entry->cursor == NULL) return NULL;
+    char *value = entry->cursor->value;
+    entry->cursor = entry->cursor->next;
+    return value;
+}
