@@ -3,6 +3,7 @@
 A small C implementation of a single-node MapReduce framework with a
 pthread-based mapper and reducer pool, partitioned hash tables, and a
 sorted dispatch order per partition. Contains a `wordcount` driver.
+Read more [Here](https://basz-website.basgug25.workers.dev/projects/map-reduce/).
 
 ## Architecture
 
