@@ -89,7 +89,12 @@ int MR_EntryKeyCmp(const void *a, const void *b);
  */
 void MR_Teardown(void);
 /**
- * @brief Emitting Function
+ * @brief Emitting Function. Invoked from the user-supplied Map function
+ *        and is safe to call concurrently from every mapper thread.
+ *        Thread-safety is enforced per partition via the partition's
+ *        pthread_mutex_t; callers do not need to synchronize externally.
+ *        The key and value strings are copied (strdup) so the caller
+ *        retains ownership of its buffers.
  * @param char *key: The key to be added to a bucket
  * @param char *value: The value to be associated to the key
  */
