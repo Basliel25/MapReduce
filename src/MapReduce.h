@@ -71,6 +71,15 @@ void *MR_MapperWorker(void *arg);
  *                   this reducer is responsible for
  */
 void *MR_ReducerWorker(void *arg);
+
+/**
+ * @brief qsort comparator that orders entry_t pointers
+ *        lexicographically by their key field.
+ * @param const void *a: Pointer to an entry_t* element
+ * @param const void *b: Pointer to an entry_t* element
+ * @return Negative if a<b, zero if equal, positive if a>b
+ */
+int MR_EntryKeyCmp(const void *a, const void *b);
 /**
  * @brief Emitting Function
  * @param char *key: The key to be added to a bucket

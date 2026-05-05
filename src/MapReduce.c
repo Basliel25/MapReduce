@@ -23,18 +23,42 @@ void *MR_MapperWorker(void *arg) {
     }
 }
 
+int MR_EntryKeyCmp(const void *a, const void *b) {
+    const entry_t *ea = *(const entry_t * const *)a;
+    const entry_t *eb = *(const entry_t * const *)b;
+    return strcmp(ea->key, eb->key);
+}
+
 void *MR_ReducerWorker(void *arg) {
     int partition_number = *(int *)arg;
     hashtable_t *partition = &partitions[partition_number];
 
+    // Pass 1: count entries across all buckets in this partition
+    int count = 0;
     for (int b = 0; b < partition->num_buckets; b++) {
-        entry_t *entry = partition->buckets[b];
-        while (entry != NULL) {
-            entry->cursor = entry->values;
-            user_reducer(entry->key, MR_Getter, partition_number);
-            entry = entry->next;
+        for (entry_t *e = partition->buckets[b]; e != NULL; e = e->next) {
+            count++;
         }
     }
+    if (count == 0) return NULL;
+
+    // Pass 2: collect entry pointers
+    entry_t **sorted = malloc(sizeof(entry_t *) * count);
+    int idx = 0;
+    for (int b = 0; b < partition->num_buckets; b++) {
+        for (entry_t *e = partition->buckets[b]; e != NULL; e = e->next) {
+            sorted[idx++] = e;
+        }
+    }
+
+    // Sort lexicographically by key, then dispatch to user reducer
+    qsort(sorted, count, sizeof(entry_t *), MR_EntryKeyCmp);
+    for (int i = 0; i < count; i++) {
+        sorted[i]->cursor = sorted[i]->values;
+        user_reducer(sorted[i]->key, MR_Getter, partition_number);
+    }
+
+    free(sorted);
     return NULL;
 }
 
