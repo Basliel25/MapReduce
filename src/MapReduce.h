@@ -61,6 +61,16 @@ void MR_Insert(int partition, char *key, char *value);
  * @param void *arg: Unused, required by pthread_create signature
  */
 void *MR_MapperWorker(void *arg);
+
+/**
+ * @brief Reducer worker thread routine. Iterates every entry in the
+ *        assigned partition, resets the per-entry cursor, and invokes
+ *        the user Reducer once per key with MR_Getter as the value
+ *        accessor.
+ * @param void *arg: Pointer to an int holding the partition number
+ *                   this reducer is responsible for
+ */
+void *MR_ReducerWorker(void *arg);
 /**
  * @brief Emitting Function
  * @param char *key: The key to be added to a bucket
