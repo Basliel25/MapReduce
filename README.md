@@ -57,11 +57,3 @@ unsigned long MR_DefaultHashPartition(char *key, int num_partitions);
 A user driver implements `Map` and `Reduce` and calls `MR_Run` from `main`.
 Pass `MR_DefaultHashPartition` (or `NULL`) to use the built-in DJB2 hash;
 supply a custom `Partitioner` for different key distribution.
-
-## Architecture notes
-
-- `num_partitions == num_reducers`. Each reducer owns one partition.
-- `MR_Emit` is thread-safe per partition via a `pthread_mutex_t`.
-- `MR_Teardown` (called at the end of `MR_Run`) frees every value node,
-  entry, bucket array, and partition mutex. Verified leak-free under
-  `valgrind --leak-check=full`.
