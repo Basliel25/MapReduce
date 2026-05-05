@@ -8,6 +8,7 @@
 /***********************
  *** Data Structures ***
 ***********************/
+
 /**
  * @brief A node inside a bucket of the hashtable
  */
@@ -36,12 +37,30 @@ typedef struct {
 } hashtable_t;
 
 /**
+ * @brief Shared work queue of input file names for mapper threads
+ */
+typedef struct {
+    char **files;          /**<- Array of file name pointers (from argv)*/
+    int size;              /**<- Total number of files in the queue*/
+    int next;              /**<- Index of next file to be claimed*/
+    pthread_mutex_t lock;  /**<- Lock protecting next index*/
+} file_queue_t;
+
+/**
  * @brief Inserting key-value pair to the appropriate bucket
  * @param int partition: The appropriate hashed bucket number
  * @param char *key: The key to be added to a bucket
  * @param char *value: The value to be associated to the key
  */
 void MR_Insert(int partition, char *key, char *value);
+
+/**
+ * @brief Mapper worker thread routine. Pulls files from the
+ *        shared file_queue_t and invokes the user Mapper on each
+ *        until the queue is exhausted.
+ * @param void *arg: Unused, required by pthread_create signature
+ */
+void *MR_MapperWorker(void *arg);
 /**
  * @brief Emitting Function
  * @param char *key: The key to be added to a bucket
