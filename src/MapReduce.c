@@ -4,6 +4,24 @@ static hashtable_t *partitions;
 static int num_partitions;
 static Partitioner partitioner;
 
+static file_queue_t file_queue;
+static Mapper user_mapper;
+
+void *MR_MapperWorker(void *arg) {
+    (void)arg;
+    while (1) {
+        pthread_mutex_lock(&file_queue.lock);
+        if (file_queue.next >= file_queue.size) {
+            pthread_mutex_unlock(&file_queue.lock);
+            return NULL;
+        }
+        char *file = file_queue.files[file_queue.next++];
+        pthread_mutex_unlock(&file_queue.lock);
+
+        user_mapper(file);
+    }
+}
+
 void MR_Emit(char *key, char *value) {
     int partition_num = partitioner(key, num_partitions);
     //Acquire hastable lock
@@ -71,5 +89,23 @@ void MR_Run(int argc, char *argv[],
         partitions[i].buckets = calloc(101, sizeof(entry_t));
         pthread_mutex_init(&partitions[i].partition_lock, NULL);
     }
+
+    // Initialize shared file queue from argv (skip argv[0])
+    file_queue.files = &argv[1];
+    file_queue.size = argc - 1;
+    file_queue.next = 0;
+    pthread_mutex_init(&file_queue.lock, NULL);
+    user_mapper = map;
+
+    // Spawn mapper threads and wait for completion
+    pthread_t *mapper_threads = malloc(sizeof(pthread_t) * num_mappers);
+    for (int i = 0; i < num_mappers; i++) {
+        pthread_create(&mapper_threads[i], NULL, MR_MapperWorker, NULL);
+    }
+    for (int i = 0; i < num_mappers; i++) {
+        pthread_join(mapper_threads[i], NULL);
+    }
+    free(mapper_threads);
+    pthread_mutex_destroy(&file_queue.lock);
 }
 char *MR_Getter(char *key, int partition_number) {return NULL;}
